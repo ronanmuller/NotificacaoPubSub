@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Authors>Notificacao Api</Authors>
+    <Product>API Notificacao Api</Product>
+    <AssemblyName>NotificacaoPubSub.Api</AssemblyName>
+    <Company>Notificacao Api</Company>
+    <Copyright>Notificacao Api</Copyright>
+    <UserSecretsId>a0be56a1-53d8-498d-9375-7757f9f12520</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.14" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="10.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\NotificacaoPubSub.Domain\NotificacaoPubSub.Domain.csproj" />
+    <ProjectReference Include="..\NotificacaoPubSub.Service\NotificacaoPubSub.Service.csproj" />
+  </ItemGroup>
+
+
+</Project>
