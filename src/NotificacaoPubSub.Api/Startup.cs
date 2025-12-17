@@ -97,7 +97,17 @@ namespace NotificacaoPubSub.Api
             if (env.IsProduction())
                 app.UseHsts();
 
-            app.UseHttpsRedirection();
+            if (env.IsDevelopment() || env.IsEnvironment("Docker"))
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            // HTTPS só em Development (não no Docker)
+            if (env.IsDevelopment())
+            {
+                app.UseHttpsRedirection();
+            }
 
             app.UseRouting();
             app.UseHealthChecks("/health");

@@ -5,8 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AutoMapper" Version="11.0.0" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.101" />
+    <PackageReference Include="AutoMapper" Version="16.0.0" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.10.4" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
   </ItemGroup>
 

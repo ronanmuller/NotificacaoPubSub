@@ -1,5 +1,14 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Amazon;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
+using Amazon.EventBridge;
+using Amazon.Extensions.NETCore.Setup;
+using Amazon.S3;
+using Amazon.SecretsManager; // <-- ADICIONADOusing Amazon;
+using Amazon.SQS;
+using Microsoft.Extensions.DependencyInjection;
 using NotificacaoPubSub.Data.Repositories;
+using NotificacaoPubSub.Domain.Aws;
 using NotificacaoPubSub.Domain.Constants;
 using NotificacaoPubSub.Domain.Interfaces.Repositories;
 using NotificacaoPubSub.Domain.Interfaces.Services;
@@ -22,6 +31,9 @@ namespace NotificacaoPubSub.Service.Extensions
             var configuracaoRepository = new DynamoBaseRepository<ConfiguracaoSistema>();
             var configuracaoSistema = configuracaoRepository.BuscarAsync(Chave.CHAVE_CONFIGURACAO).Result;
             services.AddSingleton(configuracaoSistema);
+
+            // Inicialização dos serviços AWS
+            ConfigureAwsServices(services);
 
             //Services
             services.AddSingleton<INotificacaoService, NotificacaoService>();
@@ -103,6 +115,25 @@ namespace NotificacaoPubSub.Service.Extensions
 
             // ActivitySource para spans customizados
             services.AddSingleton(new ActivitySource(activitySourceName));
+        }
+
+        /// <summary>
+        /// Configura AWS SDK (S3, DynamoDB e Secrets Manager).
+        /// Se existir configuração em <c>configuracoes</c> tenta ler via reflection os campos "Aws.Region" e "Aws.Profile".
+        /// Caso não haja valores, o SDK usará a default credential chain (variáveis de ambiente, ~/.aws/credentials, roles, etc.).
+        /// </summary>
+        private static void ConfigureAwsServices(IServiceCollection services)
+        {
+            services.AddDefaultAWSOptions(new AWSOptions());
+
+            // Registra opções padrão e serviços AWS usados pela aplicação
+            services.AddAWSService<IAmazonS3>();
+            services.AddAWSService<IAmazonDynamoDB>();
+            services.AddAWSService<IAmazonSecretsManager>();
+            services.AddAWSService<IAmazonEventBridge>();   // EventBridge
+            services.AddAWSService<IAmazonSQS>();           // SQS
+
+            services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
         }
     }
 }
