@@ -1,14 +1,12 @@
-﻿using Amazon;
-using Amazon.DynamoDBv2;
+﻿using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.EventBridge;
 using Amazon.Extensions.NETCore.Setup;
 using Amazon.S3;
-using Amazon.SecretsManager; // <-- ADICIONADOusing Amazon;
+using Amazon.SecretsManager; 
 using Amazon.SQS;
 using Microsoft.Extensions.DependencyInjection;
 using NotificacaoPubSub.Data.Repositories;
-using NotificacaoPubSub.Domain.Aws;
 using NotificacaoPubSub.Domain.Constants;
 using NotificacaoPubSub.Domain.Interfaces.Repositories;
 using NotificacaoPubSub.Domain.Interfaces.Services;
