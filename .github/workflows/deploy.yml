@@ -1,91 +1,35 @@
-﻿name: Deploy NotificacaoPubSub
+﻿name: Deploy Docker to EC2 via SSM
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
 jobs:
-  # =============================
-  # 1️⃣ Teste local do Docker
-  # =============================
-  local-docker-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: 8.0.x
-
-      - name: Build .NET
-        run: |
-          dotnet restore ./src/NotificacaoPubSub.Api/NotificacaoPubSub.Api.csproj
-          dotnet build ./src/NotificacaoPubSub.Api/NotificacaoPubSub.Api.csproj -c Release
-          dotnet publish ./src/NotificacaoPubSub.Api/NotificacaoPubSub.Api.csproj -c Release -o ./publish
-
-      - name: Build Docker image locally
-        run: |
-          IMAGE_NAME="notificacaopubsub:test"
-          docker build -f ./src/Dockerfile -t $IMAGE_NAME ./src
-
-      - name: Run Docker container locally
-        run: |
-          IMAGE_NAME="notificacaopubsub:test"
-          docker stop notificacaopubsub || true
-          docker rm notificacaopubsub || true
-          docker run -d -p 8080:5000 --name notificacaopubsub $IMAGE_NAME
-          docker ps
-
-      - name: Test container is running
-        run: |
-          curl -v http://localhost:8080/health || true
-
-  # =============================
-  # 2️⃣ Deploy para EC2 via SSM
-  # =============================
   deploy:
-    needs: local-docker-test
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Configure AWS CLI
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
 
-      - name: Login to Amazon ECR
-        run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-
-      - name: Build Docker image for ECR
-        run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
-          docker build -f ./src/Dockerfile -t $IMAGE_URI ./src
-          docker tag $IMAGE_URI $IMAGE_URI
-
-      - name: Push Docker image to ECR
-        run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
-          docker push $IMAGE_URI
-
-      - name: Deploy to EC2 via SSM
-        run: |
-          IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
-          aws ssm send-command \
-            --targets "Key=InstanceIds,Values=i-06397a73735f992c8" \
-            --document-name "AWS-RunShellScript" \
-            --comment "Deploy NotificacaoPubSub" \
-            --parameters 'commands=[
-              "docker stop notificacaopubsub || true",
-              "docker rm notificacaopubsub || true",
-              "docker pull '"$IMAGE_URI"'",
-              "docker run -d -p 80:5000 -e ASPNETCORE_ENVIRONMENT=Production --name notificacaopubsub '"$IMAGE_URI"'"
-            ]' \
-            --region ${{ secrets.AWS_REGION }}
+    - name: Deploy container to EC2
+      run: |
+        aws ssm send-command \
+          --targets "Key=InstanceIds,Values=i-06397a73735f992c8" \
+          --document-name "AWS-RunShellScript" \
+          --comment "Deploy NotificacaoPubSub via GitHub Actions" \
+          --parameters 'commands=[
+            "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 488639172465.dkr.ecr.us-east-1.amazonaws.com",
+            "docker pull 488639172465.dkr.ecr.us-east-1.amazonaws.com/notificacaopubsub-api:latest",
+            "docker stop notificacaopubsub || true",
+            "docker rm notificacaopubsub || true",
+            "docker run -d -p 80:5000 --name notificacaopubsub -e DOTNET_RUNNING_IN_CONTAINER=true -e DOTNET_URLS=http://0.0.0.0:5000 488639172465.dkr.ecr.us-east-1.amazonaws.com/notificacaopubsub-api:latest"
+          ]'
