@@ -44,7 +44,7 @@ jobs:
           curl -v http://localhost:8080/health || true
 
   # =============================
-  # 2️⃣ Deploy para EC2
+  # 2️⃣ Deploy para EC2 via SSM
   # =============================
   deploy:
     needs: local-docker-test
@@ -53,12 +53,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS CLI
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Build Docker image
         run: |
@@ -71,16 +71,18 @@ jobs:
           IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
           docker push $IMAGE_URI
 
-      - name: Deploy to EC2
+      - name: Deploy to EC2 via SSM
         run: |
-          echo "${{ secrets.EC2_SSH_KEY }}" | base64 --decode > mykey.pem
-          chmod 600 mykey.pem
-
           IMAGE_URI="${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}:latest"
 
-          ssh -o StrictHostKeyChecking=no -i mykey.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "\
-            docker stop notificacaopubsub || true && \
-            docker rm notificacaopubsub || true && \
-            docker pull $IMAGE_URI && \
-            docker run -d -p 80:5000 -e ASPNETCORE_ENVIRONMENT=Production --name notificacaopubsub $IMAGE_URI \
-          "
+          aws ssm send-command \
+            --targets "Key=InstanceIds,Values=i-06397a73735f992c8" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy NotificacaoPubSub" \
+            --parameters 'commands=[
+              "docker stop notificacaopubsub || true",
+              "docker rm notificacaopubsub || true",
+              "docker pull '"$IMAGE_URI"'",
+              "docker run -d -p 80:5000 -e ASPNETCORE_ENVIRONMENT=Production --name notificacaopubsub '"$IMAGE_URI"'"
+            ]' \
+            --region ${{ secrets.AWS_REGION }}
