@@ -7,7 +7,6 @@ using Amazon.SecretsManager;
 using Amazon.SQS;
 using Microsoft.Extensions.DependencyInjection;
 using NotificacaoPubSub.Data.Repositories;
-using NotificacaoPubSub.Domain.Aws;
 using NotificacaoPubSub.Domain.Constants;
 using NotificacaoPubSub.Domain.Interfaces.Repositories;
 using NotificacaoPubSub.Domain.Interfaces.Services;
