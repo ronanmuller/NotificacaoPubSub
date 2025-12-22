@@ -62,7 +62,7 @@ jobs:
         run: dotnet restore ./src/NotificacaoPubSub.Api/NotificacaoPubSub.Api.csproj
 
       - name: Run unit tests
-        run: dotnet test ./tests/NotificacaoPubSub.Tests/NotificacaoPubSub.Tests.csproj --no-build --verbosity normal
+        run: dotnet test ./src/NotificacaoPubSub.Tests/NotificacaoPubSub.Tests.csproj --no-build --verbosity normal
 
   # =============================
   # 3️⃣ Deploy para EC2 via SSM
