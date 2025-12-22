@@ -86,6 +86,6 @@ jobs:
               "docker stop notificacaopubsub || true",
               "docker rm notificacaopubsub || true",
               "docker pull '"$IMAGE_URI"'",
-              "docker run -d -p 80:5000 -e ASPNETCORE_ENVIRONMENT=Production --name notificacaopubsub '"$IMAGE_URI"'"
+              "docker run -d -p 8080:5000 -e ASPNETCORE_ENVIRONMENT=Production --name notificacaopubsub '"$IMAGE_URI"'"
             ]' \
             --region ${{ secrets.AWS_REGION }}
